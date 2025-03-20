@@ -54,7 +54,8 @@ public class Parser {
         while (index < tokens.size() && !tokens.get(index).equals(";")) {
             expression.append(tokens.get(index++)).append(" ");
         }
-        if (index < tokens.size()) index++; // Skip ";"
+        if (index < tokens.size())
+            index++; // Skip ";"
         return expression.toString().trim();
     }
 }

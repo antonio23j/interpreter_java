@@ -48,58 +48,51 @@ public class Interpreter {
 
     private int evaluateExpression(String expression) {
         String[] parts = expression.split(" ");
-
-        if (parts.length == 1) {
-            try {
-                return Integer.parseInt(parts[0]);
-            } catch (NumberFormatException e) {
-                return variables.getOrDefault(parts[0], 0);
-            }
-        }
-
         Stack<Integer> values = new Stack<>();
         Stack<String> operators = new Stack<>();
 
+        Map<String, Integer> precedence = Map.of("+", 1, "-", 1, "*", 2, "/", 2);
+
         for (String part : parts) {
-            if (part.matches("\\d+")) {
+            if (part.matches("\\d+")) { // Number
                 values.push(Integer.parseInt(part));
-            } else if (variables.containsKey(part)) {
+            } else if (variables.containsKey(part)) { // Variable
                 values.push(variables.get(part));
-            } else if (part.matches("[+\\-*/]")) {
+            } else if (part.matches("[+\\-*/]")) { // Operator
+                while (!operators.isEmpty() && precedence.get(operators.peek()) >= precedence.get(part)) {
+                    processOperation(values, operators.pop());
+                }
                 operators.push(part);
             } else {
-                throw new IllegalArgumentException("Invalid operator or token: " + part);
+                throw new IllegalArgumentException("Invalid token: " + part);
             }
         }
 
         while (!operators.isEmpty()) {
-            int right = values.pop();
-            int left = values.pop();
-            String op = operators.pop();
-
-            int result;
-            switch (op) {
-                case "+":
-                    result = left + right;
-                    break;
-                case "-":
-                    result = left - right;
-                    break;
-                case "*":
-                    result = left * right;
-                    break;
-                case "/":
-                    if (right == 0) {
-                        throw new ArithmeticException("Division by 0 is not valid");
-                    }
-                    result = left / right;
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid operator: " + op);
-            }
-            values.push(result);
+            processOperation(values, operators.pop());
         }
 
         return values.pop();
     }
+
+    private void processOperation(Stack<Integer> values, String operator) {
+        if (values.size() < 2) {
+            throw new IllegalArgumentException("Insufficient values for operation: " + operator);
+        }
+        int right = values.pop();
+        int left = values.pop();
+
+        int result = switch (operator) {
+            case "+" -> left + right;
+            case "-" -> left - right;
+            case "*" -> left * right;
+            case "/" -> {
+                if (right == 0) throw new ArithmeticException("Division by 0 is not valid");
+                yield left / right;
+            }
+            default -> throw new IllegalArgumentException("Invalid operator: " + operator);
+        };
+        values.push(result);
+    }
+
 }
